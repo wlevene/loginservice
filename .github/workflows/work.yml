@@ -1,0 +1,73 @@
+name: LoginService
+# Controls when the action will run. Triggers the workflow on push or pull request
+# events but only for the master branch
+on:
+  push:
+    branches: [main]
+    paths:
+      - "release.md"
+  pull_request:
+    branches: [main]
+
+# https://github.com/zerok/zerokspot.com/blob/67a64b7ac88192852baef352ba87e08e24056f68/content/weblog/2022/private-go-modules-on-github.md?plain=1#L34
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+        # with:
+        # token: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+        # submodules: recursive
+        # GITHUB_TOKEN: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.20"
+
+      #     - name: Test
+      #           run: go test -v ./golang/server/src
+
+      # - name: Configure git for private modules
+      #   env:
+      #     ACTIONS_GITHUB_TOKEN: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+      #   run: git config --global url."https://x:${ACTIONS_GITHUB_TOKEN}@github.com".insteadOf "https://github.com"
+
+      - name: Build
+        run: |
+          go mod tidy
+          echo "tidy finish"
+          go mod download
+          echo "go mod download finish"
+          echo pwd
+          echo "start build loginserice for linux"
+          CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -a -gcflags=all="-l -B" -ldflags="-w -s" -o loginsericed
+        env:
+          ACTIONS_DEPLOY_KEY: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.ACTIONS_GITHUB_TOKEN }}
+
+      - name: SCP Files To Service
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PWD }}
+          port: 22
+          # key: ${{ secrets.REMOTE_SSH_KEY }}
+          source: "./loginserviced, etc/loginservice-api.yaml"
+          target: ${{ secrets.REMOTE_PATH }}
+
+      - name: SSH Remote Commands
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.REMOTE_HOST }}
+          username: ${{ secrets.REMOTE_USER }}
+          password: ${{ secrets.REMOTE_PWD }}
+          port: 22
+          script: ${{ secrets.UPDATE_SCRIPT }}
