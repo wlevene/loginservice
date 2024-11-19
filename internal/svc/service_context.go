@@ -8,12 +8,11 @@ import (
 )
 
 type ServiceContext struct {
-	Config              config.Config
-	NopeMiddleware      rest.Middleware
-	AuthMiddleware      rest.Middleware
-	PeriodLimit         rest.Middleware
-	ShareLinkAuth       rest.Middleware
-	SlideAuthMiddleware rest.Middleware
+	Config         config.Config
+	NopeMiddleware rest.Middleware
+	AuthMiddleware rest.Middleware
+	PeriodLimit    rest.Middleware
+	RABCMiddleware rest.Middleware
 
 	Dao *dao.Dao
 }
@@ -22,12 +21,11 @@ func NewServiceContext(c config.Config) *ServiceContext {
 	dao := dao.NewDao(c.Mongo.DataSource, c.Mongo.DataBase)
 
 	return &ServiceContext{
-		Config:              c,
-		NopeMiddleware:      middleware.NewNopeMiddleware().Handle,
-		AuthMiddleware:      middleware.NewAuthMiddleware().Handle,
-		PeriodLimit:         middleware.NewPeriodLimitMiddleware(c).Handle,
-		ShareLinkAuth:       middleware.NewShareLinkAuthMiddleware().Handle,
-		SlideAuthMiddleware: middleware.NewSlideAuthMiddleware().Handle,
-		Dao:                 dao,
+		Config:         c,
+		NopeMiddleware: middleware.NewNopeMiddleware().Handle,
+		AuthMiddleware: middleware.NewAuthMiddleware().Handle,
+		PeriodLimit:    middleware.NewPeriodLimitMiddleware(c).Handle,
+		RABCMiddleware: middleware.NewRABCMiddleware().Handle,
+		Dao:            dao,
 	}
 }
