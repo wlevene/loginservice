@@ -11,13 +11,14 @@ info (
 
 type (
 	EchoReq  {}
+
+	Response {
+		Message string `json:"message"`
+	}
 )
 
-type Response {
-	Message string `json:"message"`
-}
-
 service loginservice-api {
+
 	@doc "EchoHandler"
 	@handler EchoHandler
 	get /echo (EchoReq) returns (Response)
