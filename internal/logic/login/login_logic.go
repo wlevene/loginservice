@@ -3,7 +3,10 @@ package login
 import (
 	"context"
 	"errors"
+	"time"
 
+	"github.com/wlevene/loginservice/internal/dao/accountlocks"
+	"github.com/wlevene/loginservice/internal/dao/loginattempts"
 	"github.com/wlevene/loginservice/internal/svc"
 	"github.com/wlevene/loginservice/internal/types"
 	"github.com/wlevene/loginservice/internal/util"
@@ -34,23 +37,68 @@ func (l *LoginLogic) Login(req *types.LoginReq) (resp *types.LoginReply, err err
 		return nil, errors.New("invalid email or password")
 	}
 
-	// 验证密码
+	resp = &types.LoginReply{}
+
+	// check account is locked
+	lock, _ := l.svcCtx.Dao.AccountLocksModel.FindByUserId(user.ID.Hex())
+	if lock != nil &&
+		lock.UnlockTime < time.Now().Unix() {
+		err = errors.New(lock.ToString())
+		return
+	}
+
+	attempts, _ := l.svcCtx.Dao.LoginAttemptsModel.FindByDefaultTimeWindowSize(user.ID.Hex())
+
+	if len(attempts) >= 5 {
+		err = errors.New("Too many login attempts. Please try again later")
+		return
+	}
+
+	failed_attempts, _ := l.svcCtx.Dao.LoginAttemptsModel.FindFailAttemptsByTimeWindowSize(
+		5*time.Minute,
+		user.ID.Hex())
+
+	if len(failed_attempts) >= 5 {
+		lock = &accountlocks.AccountLocks{
+			LockReason: "Too many login attempts",
+			LockTime:   time.Now().Unix(),
+			UnlockTime: time.Now().Add(5 * time.Minute).Unix(),
+			UseId:      user.ID.Hex(),
+		}
+		l.svcCtx.Dao.AccountLocksModel.Insert(context.Background(), lock)
+	}
+
+	login_attempts := &loginattempts.LoginAttempts{
+		UseId:       user.ID.Hex(),
+		AttemptTime: time.Now().Unix(),
+		IPAddress:   "",
+	}
+
 	err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Pwd))
 	if err != nil {
-		logx.Errorf("Password does not match for user: %v, error: %v", req.Email, err)
+		login_attempts.Success = false
+		l.svcCtx.Dao.LoginAttemptsModel.Insert(context.Background(), login_attempts)
+
+		// find recently  login attempts
 		return nil, errors.New("invalid email or password")
 	}
 
-	// 生成JWT
+	login_attempts.Success = true
+	l.svcCtx.Dao.LoginAttemptsModel.Insert(context.Background(), login_attempts)
+
+	// delete account lock if exists
+	lock, _ = l.svcCtx.Dao.AccountLocksModel.FindByUserId(user.ID.Hex())
+	if lock != nil {
+		l.svcCtx.Dao.AccountLocksModel.Delete(context.Background(), lock.ID.Hex())
+	}
+
 	token, err := util.GenerateJWT(user.EMail, l.svcCtx.Config.JwtAuth.AccessSecret)
 	if err != nil {
 		logx.Errorf("Failed to generate JWT for user: %v, error: %v", req.Email, err)
 		return nil, err
 	}
 
-	// 构建响应
-	resp = &types.LoginReply{
-		Token: token,
-	}
+	resp.Token = token
+
 	return
 }

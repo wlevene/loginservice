@@ -2,10 +2,13 @@ package accountlocks
 
 import (
 	"context"
+	"errors"
 
 	"github.com/wlevene/mgm/v3"
 	"github.com/zeromicro/go-zero/core/stores/cache"
 	"github.com/zeromicro/go-zero/core/stores/monc"
+
+	"go.mongodb.org/mongo-driver/bson"
 )
 
 var _ AccountLocksModel = (*customAccountLocksModel)(nil)
@@ -16,6 +19,8 @@ type (
 	AccountLocksModel interface {
 		accountLocksModel
 		DropTable()
+
+		FindByUserId(user_id string) (*AccountLocks, error)
 	}
 
 	customAccountLocksModel struct {
@@ -39,4 +44,24 @@ func NewAccountLocksModelV2() AccountLocksModel {
 
 func (model *customAccountLocksModel) DropTable() {
 	mgm.Coll(&AccountLocks{}).Drop(context.Background())
+}
+
+func (model *customAccountLocksModel) FindByUserId(user_id string) (*AccountLocks, error) {
+
+	if user_id == "" {
+		return nil, errors.New("user_id is nil")
+	}
+
+	filter := bson.M{
+		"user_id": user_id,
+	}
+
+	result := &AccountLocks{}
+
+	err := mgm.Coll(result).First(filter, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

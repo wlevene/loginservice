@@ -17,7 +17,8 @@ type (
 		Pwd   string `json:"password"`
 	}
 	LoginReply {
-		Token string `json:"token"`
+		Token   string `json:"token"`
+		Message string `json:"message"`
 	}
 )
 

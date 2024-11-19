@@ -4,6 +4,8 @@ import (
 	"log"
 	"time"
 
+	"github.com/wlevene/loginservice/internal/dao/accountlocks"
+	"github.com/wlevene/loginservice/internal/dao/loginattempts"
 	"github.com/wlevene/loginservice/internal/dao/user"
 	"github.com/wlevene/mgm/v3"
 	"github.com/zeromicro/go-zero/core/logx"
@@ -11,7 +13,9 @@ import (
 )
 
 type Dao struct {
-	UserModel user.UserModel
+	UserModel          user.UserModel
+	LoginAttemptsModel loginattempts.LoginAttemptsModel
+	AccountLocksModel  accountlocks.AccountLocksModel
 }
 
 func NewDao(mongo_address string, database_name string) *Dao {
@@ -39,6 +43,8 @@ func NewDao(mongo_address string, database_name string) *Dao {
 
 	return &Dao{
 
-		UserModel: user.NewUserModelV2(),
+		UserModel:          user.NewUserModelV2(),
+		LoginAttemptsModel: loginattempts.NewLoginAttemptsModelV2(),
+		AccountLocksModel:  accountlocks.NewAccountLocksModelV2(),
 	}
 }
