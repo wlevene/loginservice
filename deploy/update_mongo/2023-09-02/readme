@@ -1,0 +1,8 @@
+# 给所有的用户新建一个workspace
+# 给workspace设置 角色和成员
+# 将所有fs转到对应的workspace下
+
+http://127.0.0.1:9998/insou/update/20230902
+
+mongodump --db insou --out /data/db_0903
+mongorestore --db insou /data/db_0903/insou

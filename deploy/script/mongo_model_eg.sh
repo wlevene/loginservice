@@ -1,0 +1,1 @@
+goctl model mongo -t TObj -c --dir ../../internal/dao/tobj -home ../goctl --style go_zero

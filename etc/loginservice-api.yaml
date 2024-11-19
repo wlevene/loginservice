@@ -1,0 +1,20 @@
+Name: loginservice-api
+Host: 0.0.0.0
+Port: 6868
+
+
+Log:
+  Level: debug
+  Encoding: plain #json
+
+
+# mongo
+Mongo:
+  DataSource: mongodb://127.0.0.1:27017/app
+  DataBase: app
+
+Redis:
+  Addr: 127.0.0.1:6379
+
+JwtAuth:
+  AccessSecret: c662a61f-e77d-42c9-8422-46970e0e287f

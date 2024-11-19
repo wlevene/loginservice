@@ -1,0 +1,32 @@
+syntax = "v1"
+
+info (
+	title:   "loginservice"
+	desc:    "loginservice"
+	author:  "levene"
+	email:   "wong.levene@gmail.com"
+	version: "1.0.0"
+)
+
+import "app.api"
+
+// Login
+type (
+	LoginReq {
+		Email string `json:"email"`
+		Pwd   string `json:"password"`
+	}
+	LoginReply {
+		Token string `json:"token"`
+	}
+)
+
+@server (
+	prefix: auth
+	group:  auth
+)
+service loginservice-api {
+	@handler Login
+	post /login (LoginReq) returns (LoginReply)
+}
+
